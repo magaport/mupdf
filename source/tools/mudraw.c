@@ -1178,7 +1178,10 @@ static void drawrange(fz_context *ctx, fz_document *doc, const char *range)
 			for (page = spage; page <= epage; page++)
 			{
 				fz_try(ctx)
+                {
+                    if (page < 1 || page > pagecount) continue;
 					drawpage(ctx, doc, page);
+                }
 				fz_catch(ctx)
 				{
 					if (ignore_errors)
@@ -1190,8 +1193,10 @@ static void drawrange(fz_context *ctx, fz_document *doc, const char *range)
 		else
 			for (page = spage; page >= epage; page--)
 			{
-				fz_try(ctx)
+				fz_try(ctx) {
+                    if (page < 1 || page > pagecount) continue;
 					drawpage(ctx, doc, page);
+                }
 				fz_catch(ctx)
 				{
 					if (ignore_errors)
