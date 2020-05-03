@@ -12,20 +12,18 @@
 #define D50_X 0.9642f
 #define D50_Y 1.0f
 #define D50_Z 0.8249f
-static const char copy_right[] = "Copyright Artifex Software 2017";
+static const char copy_right[] = "Copyright Artifex Software 2020";
 #if SAVEICCPROFILE
 unsigned int icc_debug_index = 0;
 #endif
 
-typedef struct fz_icc_tag_s fz_icc_tag;
-
-struct fz_icc_tag_s
+typedef struct
 {
 	icTagSignature sig;
 	icUInt32Number offset;
 	icUInt32Number size;
 	unsigned char byte_padding;
-};
+} fz_icc_tag;
 
 #if SAVEICCPROFILE
 static void

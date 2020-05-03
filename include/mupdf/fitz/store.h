@@ -6,7 +6,7 @@
 #include "mupdf/fitz/output.h"
 #include "mupdf/fitz/log.h"
 
-/*
+/**
 	Resource store
 
 	MuPDF stores decoded "objects" into a store for potential reuse.
@@ -27,42 +27,105 @@
 	includes a call to FZ_INIT_STORABLE to set up the fz_storable
 	header.
  */
+typedef struct fz_storable fz_storable;
 
-typedef struct fz_storable_s fz_storable;
-typedef struct fz_key_storable_s fz_key_storable;
+/**
+	Function type for a function to drop a storable object.
 
+	Objects within the store are identified by type by comparing
+	their drop_fn pointers.
+*/
 typedef void (fz_store_drop_fn)(fz_context *, fz_storable *);
 
-struct fz_storable_s {
+/**
+	Any storable object should include an fz_storable structure
+	at the start (by convention at least) of their structure.
+	(Unless it starts with an fz_key_storable, see below).
+*/
+struct fz_storable {
 	int refs;
 	fz_store_drop_fn *drop;
 };
 
-struct fz_key_storable_s {
+/**
+	Any storable object that can appear in the key of another
+	storable object should include an fz_key_storable structure
+	at the start (by convention at least) of their structure.
+*/
+typedef struct
+{
 	fz_storable storable;
 	short store_key_refs;
-};
+} fz_key_storable;
 
+/**
+	Macro to initialise a storable object.
+*/
 #define FZ_INIT_STORABLE(S_,RC,DROP) \
 	do { fz_storable *S = &(S_)->storable; S->refs = (RC); \
 	S->drop = (DROP); \
 	} while (0)
 
+/**
+	Macro to initialise a key storable object.
+*/
 #define FZ_INIT_KEY_STORABLE(KS_,RC,DROP) \
 	do { fz_key_storable *KS = &(KS_)->key_storable; KS->store_key_refs = 0;\
 	FZ_INIT_STORABLE(KS,RC,DROP); \
 	} while (0)
 
+/**
+	Increment the reference count for a storable object.
+	Returns the same pointer.
+
+	Never throws exceptions.
+*/
 void *fz_keep_storable(fz_context *, const fz_storable *);
+
+/**
+	Decrement the reference count for a storable object. When the
+	reference count hits zero, the drop function for that object
+	is called to free the object.
+
+	Never throws exceptions.
+*/
 void fz_drop_storable(fz_context *, const fz_storable *);
 
+/**
+	Increment the (normal) reference count for a key storable
+	object. Returns the same pointer.
+
+	Never throws exceptions.
+*/
 void *fz_keep_key_storable(fz_context *, const fz_key_storable *);
+
+/**
+	Decrement the (normal) reference count for a storable object.
+	When the total reference count hits zero, the drop function for
+	that object is called to free the object.
+
+	Never throws exceptions.
+*/
 void fz_drop_key_storable(fz_context *, const fz_key_storable *);
 
+/**
+	Increment the (key) reference count for a key storable
+	object. Returns the same pointer.
+
+	Never throws exceptions.
+*/
 void *fz_keep_key_storable_key(fz_context *, const fz_key_storable *);
+
+/**
+	Decrement the (key) reference count for a storable object.
+	When the total reference count hits zero, the drop function for
+	that object is called to free the object.
+
+	Never throws exceptions.
+*/
 void fz_drop_key_storable_key(fz_context *, const fz_key_storable *);
 
-/*
+/**
 	The store can be seen as a dictionary that maps keys to
 	fz_storable values. In order to allow keys of different types to
 	be stored, we have a structure full of functions for each key
@@ -115,7 +178,7 @@ void fz_drop_key_storable_key(fz_context *, const fz_key_storable *);
 	fz_defer_reap_end to bracket a region in which many may be
 	triggered.
 */
-typedef struct fz_store_hash_s
+typedef struct
 {
 	fz_store_drop_fn *drop;
 	union
@@ -155,7 +218,12 @@ typedef struct fz_store_hash_s
 	} u;
 } fz_store_hash; /* 40 or 44 bytes */
 
-typedef struct fz_store_type_s
+/**
+	Every type of object to be placed into the store defines an
+	fz_store_type. This contains the pointers to functions to
+	make hashes, manipulate keys, and check for needing reaping.
+*/
+typedef struct
 {
 	int (*make_hash_key)(fz_context *ctx, fz_store_hash *hash, void *key);
 	void *(*keep_key)(fz_context *ctx, void *key);
@@ -165,7 +233,7 @@ typedef struct fz_store_type_s
 	int (*needs_reap)(fz_context *ctx, void *key);
 } fz_store_type;
 
-/*
+/**
 	Create a new store inside the context
 
 	max: The maximum size (in bytes) that the store is allowed to
@@ -173,10 +241,23 @@ typedef struct fz_store_type_s
 */
 void fz_new_store_context(fz_context *ctx, size_t max);
 
-void fz_drop_store_context(fz_context *ctx);
+/**
+	Increment the reference count for the store context. Returns
+	the same pointer.
+
+	Never throws exceptions.
+*/
 fz_store *fz_keep_store_context(fz_context *ctx);
 
-/*
+/**
+	Decrement the reference count for the store context. When the
+	reference count hits zero, the store context is freed.
+
+	Never throws exceptions.
+*/
+void fz_drop_store_context(fz_context *ctx);
+
+/**
 	Add an item to the store.
 
 	Add an item into the store, returning NULL for success. If an
@@ -197,7 +278,7 @@ fz_store *fz_keep_store_context(fz_context *ctx);
 */
 void *fz_store_item(fz_context *ctx, void *key, void *val, size_t itemsize, const fz_store_type *type);
 
-/*
+/**
 	Find an item within the store.
 
 	drop: The function used to free the value (to ensure we get a
@@ -212,7 +293,7 @@ void *fz_store_item(fz_context *ctx, void *key, void *val, size_t itemsize, cons
 */
 void *fz_find_item(fz_context *ctx, fz_store_drop_fn *drop, void *key, const fz_store_type *type);
 
-/*
+/**
 	Remove an item from the store.
 
 	If an item indexed by the given key exists in the store, remove
@@ -227,9 +308,12 @@ void *fz_find_item(fz_context *ctx, fz_store_drop_fn *drop, void *key, const fz_
 */
 void fz_remove_item(fz_context *ctx, fz_store_drop_fn *drop, void *key, const fz_store_type *type);
 
+/**
+	Evict every item from the store.
+*/
 void fz_empty_store(fz_context *ctx);
 
-/*
+/**
 	Internal function used as part of the scavenging
 	allocator; when we fail to allocate memory, before returning a
 	failure to the caller, we try to scavenge space within the store
@@ -243,7 +327,7 @@ void fz_empty_store(fz_context *ctx);
 */
 int fz_store_scavenge(fz_context *ctx, size_t size, int *phase);
 
-/*
+/**
 	External function for callers to use
 	to scavenge while trying allocations.
 
@@ -255,7 +339,7 @@ int fz_store_scavenge(fz_context *ctx, size_t size, int *phase);
 */
 int fz_store_scavenge_external(fz_context *ctx, size_t size, int *phase);
 
-/*
+/**
 	Evict items from the store until the total size of
 	the objects in the store is reduced to a given percentage of its
 	current size.
@@ -267,13 +351,29 @@ int fz_store_scavenge_external(fz_context *ctx, size_t size, int *phase);
 */
 int fz_shrink_store(fz_context *ctx, unsigned int percent);
 
+/**
+	Callback function called by fz_filter_store on every item within
+	the store.
+
+	Return 1 to drop the item from the store, 0 to retain.
+*/
 typedef int (fz_store_filter_fn)(fz_context *ctx, void *arg, void *key);
 
+/**
+	Filter every element in the store with a matching type with the
+	given function.
+
+	If the function returns 1 for an element, drop the element.
+*/
 void fz_filter_store(fz_context *ctx, fz_store_filter_fn *fn, void *arg, const fz_store_type *type);
 
+/**
+	Output debugging information for the current state of the store
+	to the given output channel.
+*/
 void fz_debug_store(fz_context *ctx, fz_output *out);
 
-/*
+/**
 	Increment the defer reap count.
 
 	No reap operations will take place (except for those
@@ -288,7 +388,7 @@ void fz_debug_store(fz_context *ctx, fz_output *out);
 */
 void fz_defer_reap_start(fz_context *ctx);
 
-/*
+/**
 	Decrement the defer reap count.
 
 	If the defer reap count returns to 0, and the store

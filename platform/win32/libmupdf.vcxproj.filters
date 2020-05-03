@@ -731,9 +731,6 @@
     <ClInclude Include="..\..\include\mupdf\fitz\hash.h">
       <Filter>!include\fitz</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\mupdf\fitz\image-list.h">
-      <Filter>!include\fitz</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\mupdf\fitz\image.h">
       <Filter>!include\fitz</Filter>
     </ClInclude>
@@ -808,6 +805,27 @@
     </ClInclude>
     <ClInclude Include="..\..\include\mupdf\fitz\log.h">
       <Filter>!include\fitz</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\fitz\context-imp.h">
+      <Filter>fitz</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\fitz\bidi-imp.h">
+      <Filter>fitz</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\fitz\color-imp.h">
+      <Filter>fitz</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\fitz\z-imp.h">
+      <Filter>fitz</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\fitz\glyph-imp.h">
+      <Filter>fitz</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\fitz\image-imp.h">
+      <Filter>fitz</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\fitz\pixmap-imp.h">
+      <Filter>fitz</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

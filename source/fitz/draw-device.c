@@ -1,5 +1,10 @@
 #include "mupdf/fitz.h"
+
+#include "context-imp.h"
+#include "color-imp.h"
 #include "draw-imp.h"
+#include "glyph-imp.h"
+#include "pixmap-imp.h"
 
 #include <string.h>
 #include <assert.h>
@@ -18,15 +23,11 @@
 /* Enable the following to help debug graphics stack pushes/pops */
 #undef DUMP_STACK_CHANGES
 
-typedef struct fz_draw_device_s fz_draw_device;
-
 enum {
 	FZ_DRAWDEV_FLAGS_TYPE3 = 1,
 };
 
-typedef struct fz_draw_state_s fz_draw_state;
-
-struct fz_draw_state_s {
+typedef struct {
 	fz_irect scissor;
 	fz_pixmap *dest;
 	fz_pixmap *mask;
@@ -38,9 +39,9 @@ struct fz_draw_state_s {
 	fz_matrix ctm;
 	float xstep, ystep;
 	fz_irect area;
-};
+} fz_draw_state;
 
-struct fz_draw_device_s
+typedef struct fz_draw_device
 {
 	fz_device super;
 	fz_matrix transform;
@@ -55,7 +56,7 @@ struct fz_draw_device_s
 	fz_draw_state *stack;
 	int stack_cap;
 	fz_draw_state init_stack[STACK_SIZE];
-};
+} fz_draw_device;
 
 #ifdef DUMP_GROUP_BLENDS
 

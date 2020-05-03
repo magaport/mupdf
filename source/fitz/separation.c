@@ -1,5 +1,8 @@
 #include "mupdf/fitz.h"
 
+#include "color-imp.h"
+#include "pixmap-imp.h"
+
 #include <assert.h>
 #include <string.h>
 
@@ -8,7 +11,7 @@ enum
 	FZ_SEPARATION_DISABLED_RENDER = 3
 };
 
-struct fz_separations_s
+struct fz_separations
 {
 	int refs;
 	int num_separations;

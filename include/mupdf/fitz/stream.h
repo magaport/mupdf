@@ -5,12 +5,12 @@
 #include "mupdf/fitz/context.h"
 #include "mupdf/fitz/buffer.h"
 
-/*
+/**
 	Return true if the named file exists and is readable.
 */
 int fz_file_exists(fz_context *ctx, const char *path);
 
-/*
+/**
 	fz_stream is a buffered reader capable of seeking in both
 	directions.
 
@@ -19,11 +19,9 @@ int fz_file_exists(fz_context *ctx, const char *path);
 
 	Only the data between rp and wp is valid.
 */
-typedef struct fz_stream_s fz_stream;
+typedef struct fz_stream fz_stream;
 
-fz_stream *fz_open_file_ptr_no_close(fz_context *ctx, FILE *file);
-
-/*
+/**
 	Open the named file and wrap it in a stream.
 
 	filename: Path to a file. On non-Windows machines the filename
@@ -36,7 +34,7 @@ fz_stream *fz_open_file_ptr_no_close(fz_context *ctx, FILE *file);
 fz_stream *fz_open_file(fz_context *ctx, const char *filename);
 
 #ifdef _WIN32
-/*
+/**
 	Open the named file and wrap it in a stream.
 
 	This function is only available when compiling for Win32.
@@ -47,7 +45,7 @@ fz_stream *fz_open_file(fz_context *ctx, const char *filename);
 fz_stream *fz_open_file_w(fz_context *ctx, const wchar_t *filename);
 #endif /* _WIN32 */
 
-/*
+/**
 	Open a block of memory as a stream.
 
 	data: Pointer to start of data block. Ownership of the data
@@ -60,7 +58,7 @@ fz_stream *fz_open_file_w(fz_context *ctx, const wchar_t *filename);
 */
 fz_stream *fz_open_memory(fz_context *ctx, const unsigned char *data, size_t len);
 
-/*
+/**
 	Open a buffer as a stream.
 
 	buf: The buffer to open. Ownership of the buffer is NOT passed
@@ -71,7 +69,7 @@ fz_stream *fz_open_memory(fz_context *ctx, const unsigned char *data, size_t len
 */
 fz_stream *fz_open_buffer(fz_context *ctx, fz_buffer *buf);
 
-/*
+/**
 	Attach a filter to a stream that will store any
 	characters read from the stream into the supplied buffer.
 
@@ -85,14 +83,30 @@ fz_stream *fz_open_buffer(fz_context *ctx, fz_buffer *buf);
 */
 fz_stream *fz_open_leecher(fz_context *ctx, fz_stream *chain, fz_buffer *buf);
 
+/**
+	Increments the reference count for a stream. Returns the same
+	pointer.
+
+	Never throws exceptions.
+*/
+fz_stream *fz_keep_stream(fz_context *ctx, fz_stream *stm);
+
+/**
+	Decrements the reference count for a stream.
+
+	When the reference count for the stream hits zero, frees the
+	storage used for the fz_stream itself, and (usually)
+	releases the underlying resources that the stream is based upon
+	(depends on the method used to open the stream initially).
+*/
 void fz_drop_stream(fz_context *ctx, fz_stream *stm);
 
-/*
+/**
 	return the current reading position within a stream
 */
 int64_t fz_tell(fz_context *ctx, fz_stream *stm);
 
-/*
+/**
 	Seek within a stream.
 
 	stm: The stream to seek within.
@@ -103,7 +117,7 @@ int64_t fz_tell(fz_context *ctx, fz_stream *stm);
 */
 void fz_seek(fz_context *ctx, fz_stream *stm, int64_t offset, int whence);
 
-/*
+/**
 	Read from a stream into a given data block.
 
 	stm: The stream to read from.
@@ -116,7 +130,7 @@ void fz_seek(fz_context *ctx, fz_stream *stm, int64_t offset, int whence);
 */
 size_t fz_read(fz_context *ctx, fz_stream *stm, unsigned char *data, size_t len);
 
-/*
+/**
 	Read from a stream discarding data.
 
 	stm: The stream to read from.
@@ -127,7 +141,7 @@ size_t fz_read(fz_context *ctx, fz_stream *stm, unsigned char *data, size_t len)
 */
 size_t fz_skip(fz_context *ctx, fz_stream *stm, size_t len);
 
-/*
+/**
 	Read all of a stream into a buffer.
 
 	stm: The stream to read from
@@ -139,12 +153,12 @@ size_t fz_skip(fz_context *ctx, fz_stream *stm, size_t len);
 */
 fz_buffer *fz_read_all(fz_context *ctx, fz_stream *stm, size_t initial);
 
-/*
+/**
 	Read all the contents of a file into a buffer.
 */
 fz_buffer *fz_read_file(fz_context *ctx, const char *filename);
 
-/*
+/**
 	fz_read_[u]int(16|24|32|64)(_le)?
 
 	Read a 16/32/64 bit signed/unsigned integer from stream,
@@ -173,7 +187,7 @@ int64_t fz_read_int64_le(fz_context *ctx, fz_stream *stm);
 float fz_read_float_le(fz_context *ctx, fz_stream *stm);
 float fz_read_float(fz_context *ctx, fz_stream *stm);
 
-/*
+/**
 	Read a null terminated string from the stream into
 	a buffer of a given length. The buffer will be null terminated.
 	Throws on failure (including the failure to fit the entire
@@ -181,7 +195,7 @@ float fz_read_float(fz_context *ctx, fz_stream *stm);
 */
 void fz_read_string(fz_context *ctx, fz_stream *stm, char *buffer, int len);
 
-/*
+/**
 	A function type for use when implementing
 	fz_streams. The supplied function of this type is called
 	whenever data is required, and the current buffer is empty.
@@ -199,7 +213,7 @@ void fz_read_string(fz_context *ctx, fz_stream *stm, char *buffer, int len);
 */
 typedef int (fz_stream_next_fn)(fz_context *ctx, fz_stream *stm, size_t max);
 
-/*
+/**
 	A function type for use when implementing
 	fz_streams. The supplied function of this type is called
 	when the stream is dropped, to release the stream specific
@@ -209,7 +223,7 @@ typedef int (fz_stream_next_fn)(fz_context *ctx, fz_stream *stm, size_t max);
 */
 typedef void (fz_stream_drop_fn)(fz_context *ctx, void *state);
 
-/*
+/**
 	A function type for use when implementing
 	fz_streams. The supplied function of this type is called when
 	fz_seek is requested, and the arguments are as defined for
@@ -219,7 +233,7 @@ typedef void (fz_stream_drop_fn)(fz_context *ctx, void *state);
 */
 typedef void (fz_stream_seek_fn)(fz_context *ctx, fz_stream *stm, int64_t offset, int whence);
 
-struct fz_stream_s
+struct fz_stream
 {
 	int refs;
 	int error;
@@ -235,7 +249,7 @@ struct fz_stream_s
 	fz_stream_seek_fn *seek;
 };
 
-/*
+/**
 	Create a new stream object with the given
 	internal state and function pointers.
 
@@ -250,9 +264,7 @@ struct fz_stream_s
 */
 fz_stream *fz_new_stream(fz_context *ctx, void *state, fz_stream_next_fn *next, fz_stream_drop_fn *drop);
 
-fz_stream *fz_keep_stream(fz_context *ctx, fz_stream *stm);
-
-/*
+/**
 	Attempt to read a stream into a buffer. If truncated
 	is NULL behaves as fz_read_all, sets a truncated flag in case of
 	error.
@@ -267,7 +279,7 @@ fz_stream *fz_keep_stream(fz_context *ctx, fz_stream *stm);
 */
 fz_buffer *fz_read_best(fz_context *ctx, fz_stream *stm, size_t initial, int *truncated);
 
-/*
+/**
 	Read a line from stream into the buffer until either a
 	terminating newline or EOF, which it replaces with a null byte
 	('\0').
@@ -277,7 +289,7 @@ fz_buffer *fz_read_best(fz_context *ctx, fz_stream *stm, size_t initial, int *tr
 */
 char *fz_read_line(fz_context *ctx, fz_stream *stm, char *buf, size_t max);
 
-/*
+/**
 	Ask how many bytes are available immediately from
 	a given stream.
 
@@ -320,7 +332,7 @@ static inline size_t fz_available(fz_context *ctx, fz_stream *stm, size_t max)
 	return stm->wp - stm->rp;
 }
 
-/*
+/**
 	Read the next byte from a stream.
 
 	stm: The stream t read from.
@@ -350,7 +362,7 @@ static inline int fz_read_byte(fz_context *ctx, fz_stream *stm)
 	return c;
 }
 
-/*
+/**
 	Peek at the next byte in a stream.
 
 	stm: The stream to peek at.
@@ -384,7 +396,7 @@ static inline int fz_peek_byte(fz_context *ctx, fz_stream *stm)
 	return c;
 }
 
-/*
+/**
 	Unread the single last byte successfully
 	read from a stream. Do not call this without having
 	successfully read a byte.
@@ -396,6 +408,13 @@ static inline void fz_unread_byte(fz_context *ctx FZ_UNUSED, fz_stream *stm)
 	stm->rp--;
 }
 
+/**
+	Query if the stream has reached EOF (during normal bytewise
+	reading).
+
+	See fz_is_eof_bits for the equivalent function for bitwise
+	reading.
+*/
 static inline int fz_is_eof(fz_context *ctx, fz_stream *stm)
 {
 	if (stm->rp == stm->wp)
@@ -407,7 +426,7 @@ static inline int fz_is_eof(fz_context *ctx, fz_stream *stm)
 	return 0;
 }
 
-/*
+/**
 	Read the next n bits from a stream (assumed to
 	be packed most significant bit first).
 
@@ -450,7 +469,7 @@ static inline unsigned int fz_read_bits(fz_context *ctx, fz_stream *stm, int n)
 	return x;
 }
 
-/*
+/**
 	Read the next n bits from a stream (assumed to
 	be packed least significant bit first).
 
@@ -499,7 +518,7 @@ static inline unsigned int fz_read_rbits(fz_context *ctx, fz_stream *stm, int n)
 	return x;
 }
 
-/*
+/**
 	Called after reading bits to tell the stream
 	that we are about to return to reading bytewise. Resyncs
 	the stream to whole byte boundaries.
@@ -509,9 +528,24 @@ static inline void fz_sync_bits(fz_context *ctx FZ_UNUSED, fz_stream *stm)
 	stm->avail = 0;
 }
 
+/**
+	Query if the stream has reached EOF (during bitwise
+	reading).
+
+	See fz_is_eof for the equivalent function for bytewise
+	reading.
+*/
 static inline int fz_is_eof_bits(fz_context *ctx, fz_stream *stm)
 {
 	return fz_is_eof(ctx, stm) && (stm->avail == 0 || stm->bits == EOF);
 }
+
+/* Implementation details: subject to change. */
+
+/**
+	Create a stream from a FILE * that will not be closed
+	when the stream is dropped.
+*/
+fz_stream *fz_open_file_ptr_no_close(fz_context *ctx, FILE *file);
 
 #endif

@@ -1,6 +1,10 @@
 #include "mupdf/fitz.h"
 #include "mupdf/ucdn.h"
+
 #include "draw-imp.h"
+#include "color-imp.h"
+#include "glyph-imp.h"
+#include "pixmap-imp.h"
 
 #include <ft2build.h>
 #include "hb.h"
@@ -282,7 +286,7 @@ float fz_font_descender(fz_context *ctx, fz_font *font)
  * Freetype hooks
  */
 
-struct fz_font_context_s
+struct fz_font_context
 {
 	int ctx_refs;
 	FT_Library ftlib;
@@ -1125,36 +1129,6 @@ do_render_ft_stroked_glyph(fz_context *ctx, fz_font *font, int gid, fz_matrix tr
 	return glyph;
 }
 
-fz_pixmap *
-fz_render_ft_stroked_glyph_pixmap(fz_context *ctx, fz_font *font, int gid, fz_matrix trm, fz_matrix ctm, const fz_stroke_state *state, int aa)
-{
-	FT_Glyph glyph = do_render_ft_stroked_glyph(ctx, font, gid, trm, ctm, state, aa);
-	FT_BitmapGlyph bitmap = (FT_BitmapGlyph)glyph;
-	fz_pixmap *pixmap = NULL;
-
-	if (bitmap == NULL)
-	{
-		fz_unlock(ctx, FZ_LOCK_FREETYPE);
-		return NULL;
-	}
-
-	fz_try(ctx)
-	{
-		pixmap = pixmap_from_ft_bitmap(ctx, bitmap->left, bitmap->top, &bitmap->bitmap);
-	}
-	fz_always(ctx)
-	{
-		FT_Done_Glyph(glyph);
-		fz_unlock(ctx, FZ_LOCK_FREETYPE);
-	}
-	fz_catch(ctx)
-	{
-		fz_rethrow(ctx);
-	}
-
-	return pixmap;
-}
-
 fz_glyph *
 fz_render_ft_stroked_glyph(fz_context *ctx, fz_font *font, int gid, fz_matrix trm, fz_matrix ctm, const fz_stroke_state *state, int aa)
 {
@@ -1370,7 +1344,7 @@ fz_outline_ft_glyph(fz_context *ctx, fz_font *font, int gid, fz_matrix trm)
 	fz_catch(ctx)
 	{
 		fz_warn(ctx, "freetype cannot decompose outline");
-		fz_free(ctx, cc.path);
+		fz_drop_path(ctx, cc.path);
 		return NULL;
 	}
 

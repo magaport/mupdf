@@ -1,5 +1,9 @@
 #include "mupdf/fitz.h"
 
+#include "context-imp.h"
+#include "image-imp.h"
+#include "pixmap-imp.h"
+
 #include <string.h>
 #include <math.h>
 #include <assert.h>
@@ -16,27 +20,25 @@ fz_key_storable_needs_reaping(fz_context *ctx, const fz_key_storable *ks)
 
 #define SCALABLE_IMAGE_DPI 96
 
-struct fz_compressed_image_s
+struct fz_compressed_image
 {
 	fz_image super;
-	fz_pixmap *tile;
 	fz_compressed_buffer *buffer;
 };
 
-struct fz_pixmap_image_s
+struct fz_pixmap_image
 {
 	fz_image super;
 	fz_pixmap *tile;
 };
 
-typedef struct fz_image_key_s fz_image_key;
-
-struct fz_image_key_s {
+typedef struct
+{
 	int refs;
 	fz_image *image;
 	int l2factor;
 	fz_irect rect;
-};
+} fz_image_key;
 
 fz_image *
 fz_keep_image(fz_context *ctx, fz_image *image)
@@ -489,7 +491,6 @@ drop_compressed_image(fz_context *ctx, fz_image *image_)
 {
 	fz_compressed_image *image = (fz_compressed_image *)image_;
 
-	fz_drop_pixmap(ctx, image->tile);
 	fz_drop_compressed_buffer(ctx, image->buffer);
 }
 
@@ -932,7 +933,7 @@ compressed_image_get_size(fz_context *ctx, fz_image *image)
 	if (image == NULL)
 		return 0;
 
-	return sizeof(fz_pixmap_image) + fz_pixmap_size(ctx, im->tile) + (im->buffer && im->buffer->buffer ? im->buffer->buffer->cap : 0);
+	return sizeof(fz_pixmap_image) + (im->buffer && im->buffer->buffer ? im->buffer->buffer->cap : 0);
 }
 
 fz_image *
@@ -976,20 +977,6 @@ void fz_set_compressed_image_buffer(fz_context *ctx, fz_compressed_image *image,
 	((fz_compressed_image *)image)->buffer = buf; /* Note: compressed buffers are not reference counted */
 }
 
-fz_pixmap *fz_compressed_image_tile(fz_context *ctx, fz_compressed_image *image)
-{
-	if (image == NULL || image->super.get_pixmap != compressed_image_get_pixmap)
-		return NULL;
-	return ((fz_compressed_image *)image)->tile;
-}
-
-void fz_set_compressed_image_tile(fz_context *ctx, fz_compressed_image *image, fz_pixmap *pix)
-{
-	assert(image != NULL && image->super.get_pixmap == compressed_image_get_pixmap);
-	fz_drop_pixmap(ctx, ((fz_compressed_image *)image)->tile);
-	((fz_compressed_image *)image)->tile = fz_keep_pixmap(ctx, pix);
-}
-
 fz_pixmap *fz_pixmap_image_tile(fz_context *ctx, fz_pixmap_image *image)
 {
 	if (image == NULL || image->super.get_pixmap != pixmap_image_get_pixmap)
@@ -1027,6 +1014,8 @@ fz_recognize_image_format(fz_context *ctx, unsigned char p[8])
 	if (p[0] == 'G' && p[1] == 'I' && p[2] == 'F')
 		return FZ_IMAGE_GIF;
 	if (p[0] == 'B' && p[1] == 'M')
+		return FZ_IMAGE_BMP;
+	if (p[0] == 'B' && p[1] == 'A')
 		return FZ_IMAGE_BMP;
 	if (p[0] == 0x97 && p[1] == 'J' && p[2] == 'B' && p[3] == '2' &&
 		p[4] == '\r' && p[5] == '\n'  && p[6] == 0x1a && p[7] == '\n')
